@@ -3,11 +3,11 @@
 ## Sample commands for CMNIST  
 To run on CMNIST:  
 ```
-python run_expt.py -s confounder -d CMNIST --lr 0.001 --batch_size 32 --weight_decay 5e-4 --model cnn --n_epochs 20 --reweight_groups --robust --gamma 0.1 --generalization_adjustment 0 --p_correlation 0.995 --data_cmap hsv --test_shift random -tc 0 1 -tc 2 3 -tc 4 5 -tc 6 7 -tc 8 9 --seed 0
+python run_expt.py -s confounder -d CMNIST --lr 0.01 --batch_size 32 --weight_decay 0.01 --model cnn --n_epochs 20 --reweight_groups --robust --gamma 0.1 --generalization_adjustment 0 --p_correlation 0.995 --data_cmap hsv --test_shift random -tc 0 1 -tc 2 3 -tc 4 5 -tc 6 7 -tc 8 9 --seed 0
 
-python run_expt.py -s confounder -d CMNIST --lr 0.001 --batch_size 32 --weight_decay 5e-4 --model cnn --n_epochs 20 --reweight_groups --robust --gamma 0.1 --generalization_adjustment 0 --p_correlation 0.995 --data_cmap hsv --test_shift random -tc 0 1 -tc 2 3 -tc 4 5 -tc 6 7 -tc 8 9 --seed 1
+python run_expt.py -s confounder -d CMNIST --lr 0.01 --batch_size 32 --weight_decay 0.01 --model cnn --n_epochs 20 --reweight_groups --robust --gamma 0.1 --generalization_adjustment 0 --p_correlation 0.995 --data_cmap hsv --test_shift random -tc 0 1 -tc 2 3 -tc 4 5 -tc 6 7 -tc 8 9 --seed 1
 
-python run_expt.py -s confounder -d CMNIST --lr 0.001 --batch_size 32 --weight_decay 5e-4 --model cnn --n_epochs 20 --reweight_groups --robust --gamma 0.1 --generalization_adjustment 0 --p_correlation 0.995 --data_cmap hsv --test_shift random -tc 0 1 -tc 2 3 -tc 4 5 -tc 6 7 -tc 8 9 --seed 2
+python run_expt.py -s confounder -d CMNIST --lr 0.01 --batch_size 32 --weight_decay 0.01 --model cnn --n_epochs 20 --reweight_groups --robust --gamma 0.1 --generalization_adjustment 0 --p_correlation 0.995 --data_cmap hsv --test_shift random -tc 0 1 -tc 2 3 -tc 4 5 -tc 6 7 -tc 8 9 --seed 2
 ```
 
 This code implements the group DRO algorithm from the following paper:
@@ -83,7 +83,7 @@ Our code expects the following files/folders in the `[root_dir]/cub` directory:
 You can download a tarball of this dataset [here](https://nlp.stanford.edu/data/dro/waterbird_complete95_forest2water2.tar.gz). The Waterbirds dataset can also be accessed through the [WILDS package](https://github.com/p-lambda/wilds), which will automatically download the dataset.
 
 A sample command to run group DRO on Waterbirds is:
-`python run_expt.py -s confounder -d CUB -t waterbird_complete95 -c forest2water2 --lr 0.001 --batch_size 128 --weight_decay 0.0001 --model resnet50 --n_epochs 300 --reweight_groups --robust --gamma 0.1 --generalization_adjustment 0`
+`python run_expt.py -s confounder -d CUB -t waterbird_complete95 -c forest2water2 --lr 0.01 --batch_size 128 --weight_decay 0.0001 --model resnet50 --n_epochs 300 --reweight_groups --robust --gamma 0.1 --generalization_adjustment 0`
 
 Note that compared to the training set, the validation and test sets are constructed with different proportions of each group. We describe this in more detail in Appendix C.1 of our paper, which we reproduce here for convenience:
 
