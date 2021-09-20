@@ -1,7 +1,7 @@
 # Distributionally Robust Neural Networks for Group Shifts: On the Importance of Regularization for Worst-Case Generalization
 
 ## Sample commands for CMNIST  
-To run on CMNIST:  
+To run on CMNIST (3 seeds):  
 ```
 python run_expt.py -s confounder -d CMNIST --lr 0.01 --batch_size 32 --weight_decay 0.01 --model cnn --n_epochs 20 --reweight_groups --robust --gamma 0.1 --generalization_adjustment 0 --p_correlation 0.995 --data_cmap hsv --test_shift random -tc 0 1 -tc 2 3 -tc 4 5 -tc 6 7 -tc 8 9 --seed 0
 
