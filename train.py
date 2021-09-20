@@ -12,7 +12,8 @@ from tqdm import tqdm
 from utils import AverageMeter, accuracy
 from loss import LossComputer
 
-from pytorch_transformers import AdamW, WarmupLinearSchedule
+# Only for BERT?
+# from pytorch_transformers import AdamW, WarmupLinearSchedule
 
 def run_epoch(epoch, model, optimizer, loader, loss_computer, logger, csv_logger, args,
               is_training, show_progress=False, log_every=50, scheduler=None):

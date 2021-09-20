@@ -19,6 +19,9 @@ dataset_attributes = {
     },
     'MultiNLI': {
         'root_dir': 'multinli'
+    },
+    'CMNIST': {  # May need to change this, or not
+        'root_dir': '/dfs/scratch1/mzhang/projects/slice-and-dice-smol/datasets/data/'
     }
 }
 

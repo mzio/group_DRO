@@ -3,6 +3,7 @@ import argparse
 import pandas as pd
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torchvision
 
 from models import model_attributes
@@ -11,12 +12,39 @@ from utils import set_seed, Logger, CSVBatchLogger, log_args
 from train import train
 
 
+# Added for evaluation on CMNIST
+class CNN(nn.Module):
+    def __init__(self, num_classes):
+        super(CNN, self).__init__()
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)  # 16 * 5 * 5
+        self.fc2 = nn.Linear(120, 84)  # Activations layer
+        self.fc = nn.Linear(84, num_classes)
+        self.relu_1 = nn.ReLU()
+        self.relu_2 = nn.ReLU()
+        
+        self.activation_layer = torch.nn.ReLU
+
+    def forward(self, x):
+        # Doing this way because only want to save activations
+        # for fc linear layers - see later
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 16 * 5 * 5)
+        x = self.relu_1(self.fc1(x))
+        x = self.relu_2(self.fc2(x))
+        x = self.fc(x)
+        return x
+
+
 def main():
     parser = argparse.ArgumentParser()
 
     # Settings
-    parser.add_argument('-d', '--dataset', choices=dataset_attributes.keys(), required=True)
-    parser.add_argument('-s', '--shift_type', choices=shift_types, required=True)
+    parser.add_argument('-d', '--dataset', choices=dataset_attributes.keys())  # , required=True)
+    parser.add_argument('-s', '--shift_type', choices=shift_types)  # , required=True)
     # Confounders
     parser.add_argument('-t', '--target_name')
     parser.add_argument('-c', '--confounder_names', nargs='+')
@@ -40,12 +68,35 @@ def main():
     parser.add_argument('--use_normalized_loss', default=False, action='store_true')
     parser.add_argument('--btl', default=False, action='store_true')
     parser.add_argument('--hinge', default=False, action='store_true')
+    
+    # CMNIST 
+    parser.add_argument('--num_workers', type=int, default=2)
+    parser.add_argument('--replicate', type=int, default=0)
+    parser.add_argument('--val_split', type=float, default=0.2)
+    # Data generation parameters
+    parser.add_argument('-pc', '--p_correlation', type=float, default=0.9,
+                    help="Ratio of majority group size to total size")
+    parser.add_argument('-pcc', '--p_corr_by_class', type=float, nargs='+', action='append',
+                    help="If specified, p_corr for each group, e.g. -pcc 0.9 -pcc 0.9 -pcc 0.9 -pcc 0.9 -pcc 0.9 is the same as -pc 0.9")
+    parser.add_argument('--data_cmap', type=str, default='hsv',
+                        help="Colormap name to color MNIST digits. If solid color given colors all digits the same color")
+    parser.add_argument('--test_cmap', type=str, default='',
+                        help="Colormap name to color MNIST test digits. Solid colors applies same color to all digits. Only applies if specified, and automatically changes test_shift to 'generalize'")
+    parser.add_argument('-tc', '--train_classes', type=int, nargs='+', action='append',
+                        help="How to set up the classification problem, e.g. -tc 0 1 -tc 2 3 -tc 4 5 -tc 6 7 -tc 8 9")
+    parser.add_argument('-tcr', '--train_class_ratios', type=float, nargs='+', action='append',
+                        help="If specified, introduce class imbalance by only including the specified ratio of datapoints per class, e.g. for original ratios: -tcr 1.0 -tcr 1.0 -tcr 1.0 -tcr 1.0 -tcr 1.0 ")
+    parser.add_argument('--test_shift', type=str, default='random',
+                        help="How to shift the colors encountered in the test set - choices=['random', 'unseen', 'iid', 'shift_n' 'generalize']")
+    parser.add_argument('--flipped', default=False, action='store_true',
+                        help="If true, color background and leave digit white")
 
     # Model
-    parser.add_argument(
-        '--model',
-        choices=model_attributes.keys(),
-        default='resnet50')
+    parser.add_argument('--model')
+#     parser.add_argument(
+#         '--model',
+#         choices=model_attributes.keys(),
+#         default='resnet50')
     parser.add_argument('--train_from_scratch', action='store_true', default=False)
 
     # Optimization
@@ -64,15 +115,37 @@ def main():
     parser.add_argument('--save_step', type=int, default=10)
     parser.add_argument('--save_best', action='store_true', default=False)
     parser.add_argument('--save_last', action='store_true', default=False)
+    
+    
+    # MINE 9/9/21
+    parser.add_argument('--pred_groups_path', type=str, default=None)
 
     args = parser.parse_args()
-    check_args(args)
+    # check_args(args)
+    
+    args.bs_trn = args.batch_size
+    args.bs_val = args.batch_size
 
     # BERT-specific configs copied over from run_glue.py
     if args.model == 'bert':
         args.max_grad_norm = 1.0
         args.adam_epsilon = 1e-8
         args.warmup_steps = 0
+        
+    if args.pred_groups_path is not None:
+        if args.log_dir == './logs':
+            log_dir_suffix = args.pred_groups_path.split('/')[-1][:-4]
+            args.log_dir = f'./logs_pg_{log_dir_suffix}_wd={args.weight_decay}_e={args.n_epochs}_ga={args.generalization_adjustment}_lr={args.lr}_wd={args.weight_decay}_s={args.seed}'
+            print(f'> Updated logging to: {args.log_dir}')
+            
+    elif args.dataset == 'CMNIST':
+        if args.log_dir == './logs':
+            log_dir_suffix = f'CMNIST_p={args.p_correlation}_tc={args.train_classes}'
+            args.log_dir = f'./logs_{log_dir_suffix}_lr={args.lr}_wd={args.weight_decay}_e={args.n_epochs}_ga={args.generalization_adjustment}_s={args.seed}'
+    else:
+        if args.log_dir == './logs':
+            log_dir_suffix = f'{args.dataset}_e={args.n_epochs}_ga={args.generalization_adjustment}'
+            args.log_dir = f'./logs_{log_dir_suffix}_lr={args.lr}_wd={args.weight_decay}_s={args.seed}'
 
     if os.path.exists(args.log_dir) and args.resume:
         resume=True
@@ -122,6 +195,10 @@ def main():
     if resume:
         model = torch.load(os.path.join(args.log_dir, 'last_model.pth'))
         d = train_data.input_size()[0]
+    
+    elif args.model == 'cnn' or args.dataset == 'CMNIST':
+        model = CNN(num_classes=5)
+        
     elif model_attributes[args.model]['feature_type'] in ('precomputed', 'raw_flattened'):
         assert pretrained
         # Load precomputed features

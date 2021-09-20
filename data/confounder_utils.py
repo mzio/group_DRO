@@ -10,6 +10,7 @@ from data.celebA_dataset import CelebADataset
 from data.cub_dataset import CUBDataset
 from data.dro_dataset import DRODataset
 from data.multinli_dataset import MultiNLIDataset
+from data.colored_mnist import ColoredMNIST, load_colored_mnist
 
 ################
 ### SETTINGS ###
@@ -24,6 +25,9 @@ confounder_settings = {
     },
     'MultiNLI':{
         'constructor': MultiNLIDataset
+    },
+    'CMNIST':{
+        'constructor': ColoredMNIST
     }
 }
 
@@ -31,6 +35,20 @@ confounder_settings = {
 ### DATA PREPARATION ###
 ########################
 def prepare_confounder_data(args, train, return_full_dataset=False):
+    if args.dataset == 'CMNIST':
+        args.data_path = '/dfs/scratch1/mzhang/projects/slice-and-dice-smol/datasets/data/'
+        subsets = load_colored_mnist(args,
+                                     train_shuffle=False,
+                                     transform=None,
+                                     datasets=True)
+        full_dataset = subsets[0]  # Just use train
+        dro_subsets = [DRODataset(subset, 
+                                  process_item_fn=None,
+                                  n_groups=full_dataset.n_groups,
+                                  n_classes=full_dataset.n_classes,
+                                  group_str_fn=full_dataset.group_str) 
+                       for subset in subsets]
+        return dro_subsets
     full_dataset = confounder_settings[args.dataset]['constructor'](
         root_dir=args.root_dir,
         target_name=args.target_name,
