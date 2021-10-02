@@ -1,5 +1,8 @@
 # Distributionally Robust Neural Networks for Group Shifts: On the Importance of Regularization for Worst-Case Generalization
 
+My section
+---
+
 ## Sample commands for CMNIST  
 To run on CMNIST (3 seeds):  
 ```
@@ -9,6 +12,17 @@ python run_expt.py -s confounder -d CMNIST --lr 0.01 --batch_size 32 --weight_de
 
 python run_expt.py -s confounder -d CMNIST --lr 0.01 --batch_size 32 --weight_decay 0.01 --model cnn --n_epochs 100 --reweight_groups --robust --gamma 0.1 --generalization_adjustment 0 --p_correlation 0.995 --data_cmap hsv --test_shift random -tc 0 1 -tc 2 3 -tc 4 5 -tc 6 7 -tc 8 9 --seed 2
 ```
+
+## Using inferred groups (e.g.GEORGE)
+
+To run GDRO with inferred groups, specify the `--pred_groups_path` argument with a path to a `.npy` array, e.g.
+```
+python run_expt.py -s confounder -d CelebA -t Blond_Hair -c Male --lr 1e-5 --batch_size 128 --weight_decay 1e-1 --model resnet50 --n_epochs 50 --reweight_groups --robust --gamma 0.1 --generalization_adjustment 3 --pred_groups_path /dfs/scratch1/mzhang/projects/eiil/notebooks/eiil_group_indices_1.npy --seed 0
+```
+where the numpy array should be the same size as the training data set, and values `[0, 0, 1, 1, 2, 2]` means that the 1st two samples belong to Group 0, the second two belong to group 1 and the 3rd two belong to group 2 (all inferred).
+
+End my section
+---
 
 This code implements the group DRO algorithm from the following paper:
 
